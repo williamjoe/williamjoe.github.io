@@ -1,0 +1,450 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>壹◈世界</title>
+  <subtitle>世事漫随流水，算来一梦浮生。</subtitle>
+  <link href="/atom.xml" rel="self"/>
+  
+  <link href="http://xeworld.com/"/>
+  <updated>2017-04-10T07:13:42.593Z</updated>
+  <id>http://xeworld.com/</id>
+  
+  <author>
+    <name>William Zhou</name>
+    
+  </author>
+  
+  <generator uri="http://hexo.io/">Hexo</generator>
+  
+  <entry>
+    <title>自建VPN搭建Shadowsocks服务器科学上网全攻略（HostUS）</title>
+    <link href="http://xeworld.com/post/setup-shadowsocks-vpn/"/>
+    <id>http://xeworld.com/post/setup-shadowsocks-vpn/</id>
+    <published>2016-10-21T11:14:18.000Z</published>
+    <updated>2017-04-10T07:13:42.593Z</updated>
+    
+    <content type="html"><![CDATA[<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/hint.css/2.4.1/hint.min.css"><p>一直以来，我都对公有VPN服务器的安全性存有疑问。为了更好的科学上网，经过多次亲身实战，简要写了一篇攻略。</p>
+<h1 id="服务器选择">1. 服务器选择</h1><p>因为我使用电信网络为主，经过对比<a href="https://my.hostus.us/aff.php?aff=1584" target="_blank" rel="external">HostUS</a>、<a href="https://m.do.co/c/4a70cb2bd58c" target="_blank" rel="external">DigitalOcean</a>、<a href="http://www.ufovps.com/aff.php?aff=157" target="_blank" rel="external">UFOVPS</a>、<a href="https://www.aliyun.com/" target="_blank" rel="external">Aliyun HongKong</a>等多家云服务器供应商实测结果，线路上<a href="https://my.hostus.us/aff.php?aff=1584" target="_blank" rel="external">HostUS</a>属于半CN2线路，<a href="https://m.do.co/c/4a70cb2bd58c" target="_blank" rel="external">DigitalOcean</a>无CN2线路，而位于香港的<a href="http://www.ufovps.com/aff.php?aff=157" target="_blank" rel="external">UFOVPS</a>、<a href="https://www.aliyun.com/" target="_blank" rel="external">Aliyun HongKong</a>虽然号称与大陆地区是CN2直连，但鉴于VPN用于科学上网，香港的国际带宽昂贵，在访问时都从美国等地绕一圈，实际效果反而不如美国的VPS。</p>
+<p>因此经过对比，我最终选择了<a href="https://my.hostus.us/aff.php?aff=1584" target="_blank" rel="external">HostUS</a>的LA服务器，经测试延迟200ms左右，能够满足一般的YouTube需求，价格也非常亲民，每月最低不到5美元。传送门：<a href="https://my.hostus.us/aff.php?aff=1584" target="_blank" rel="external">HostUS</a>。</p>
+<a id="more"></a>
+<h1 id="新建VPN服务器">2. 新建VPN服务器</h1><p>为便于安装锐速（ServerSpeeder）加强访问效果，我们需要新建KVM的服务器。在<a href="https://hostus.us/kvm-vps.html" target="_blank" rel="external">HostUS的VPS选择界面</a>选择一款适合自己的（一般而言最低配的即可）服务器配置，填写相应信息后付款，等待一段时间的人工审核（一般一小时左右），即可看到服务器状态变为“Active”，可以使用了。</p>
+<h1 id="修改VPN服务器系统">3. 修改VPN服务器系统</h1><p>我习惯于使用Ubuntu系统，而HostUS默认新建的是CentOS系统，故需要在服务器设置左侧边栏选择Rebuild，并在右侧选择Ubuntu 14.04系统。<br><img src="//xeworld.oss-cn-hangzhou.aliyuncs.com/sources/posts/2016.10.21.setup-shadowsocks-vpn/Rebuild.png" alt="Rebuild System"></p>
+<p>下方的Hostname随便取个名字，在Root Password处填入自己喜爱的密码，SSH Key可以先空着。然后点击下方的Rebuild。<br><img src="//xeworld.oss-cn-hangzhou.aliyuncs.com/sources/posts/2016.10.21.setup-shadowsocks-vpn/Rebuild2.png" alt="Rebuild System"></p>
+<h1 id="远程登录VPN服务器">4. 远程登录VPN服务器</h1><p>下载<a href="http://www.chiark.greenend.org.uk/~sgtatham/putty/download.html" target="_blank" rel="external">Putty</a>软件（Windows下），填写Host Name中填写服务器的IP地址，Port中填写端口为22，，然后点击下方的Open即可开始连接。</p>
+<p>在出现Login as:的提示后，输入root，会提示输入root密码。root密码就是在上一步Rebuild中所填写的Root Password内容。<em>在输入密码时，是不会提示有键入信息的，输完直接按回车即可。</em></p>
+<p><del>如果使用OS X系统或者Linux系统，可以直接打开终端，输入ssh root@服务器IP地址进行连接。</del></p>
+<h1 id="修改Ubuntu内核以匹配锐速">5. 修改Ubuntu内核以匹配锐速</h1><p>Putty连接VPN服务器后，输入<code>apt-get update</code>以更新软件源（如果不是以root身份登录的，以下所有命令都需在最前面增加<code>sudo</code>，例如<code>sudo apt-get update</code>）。</p>
+<p>然后安装锐速支持的内核：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">apt-get install linux-image-extra-3.13.0-24-generic</div></pre></td></tr></table></figure>
+<p>查看现有内核：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">dpkg <span class="_">-l</span>|grep linux-image</div></pre></td></tr></table></figure>
+<p>删除内核中带数字的，不是3.13.0-24版本的内核，例如：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">apt-get purge linux-image-4.2.0-42-generic linux-image-extra-4.2.0-42-generic</div></pre></td></tr></table></figure>
+<p>需要注意，删除后请再次运行<code>dpkg -l|grep linux-image</code>命令，查看其它的内核是否已经卸载干净。在卸载完成后，更新grub并重启。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div></pre></td><td class="code"><pre><div class="line">update-grub</div><div class="line">reboot</div></pre></td></tr></table></figure>
+<p>在每次登陆后，都可以在头部看到内核信息。<br><img src="//xeworld.oss-cn-hangzhou.aliyuncs.com/sources/posts/2016.10.21.setup-shadowsocks-vpn/core.png" alt="Core"></p>
+<h1 id="安装破解版锐速并优化锐速设置">6. 安装破解版锐速并优化锐速设置</h1><p>因为锐速目前已经停止免费账户的新增使用，请支持正版购买正版锐速安装。<del>参考<a href="https://www.91yun.org/archives/683" target="_blank" rel="external">91YUN</a>上的攻略，在VPN中输入以下代码来安装破解版的锐速：</del></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">wget -N --no-check-certificate https://raw.githubusercontent.com/91yun/serverspeeder/master/serverspeeder-all.sh &amp;&amp; bash serverspeeder-all.sh</div></pre></td></tr></table></figure>
+<p>删除方式为</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line">chattr -i /serverspeeder/etc/apx* &amp;&amp; /serverspeeder/bin/serverSpeeder.sh uninstall <span class="_">-f</span></div></pre></td></tr></table></figure>
+<p>用VI编辑器打开锐速配置文件<code>vi /serverspeeder/etc/config</code></p>
+<p><del>VI界面下，英文输入法按一下i键，下方提示“Insert”说明切换到输入模式，输入完成按ESC键回到浏览模式。在Putty中粘贴信息是使用鼠标右键，复制信息是鼠标选中信息后回车即可完成复制。文件修改完成后，按:wq回车，完成保存工作。</del></p>
+<p>修改该配置文件的如下参数：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">rsc=<span class="string">"1"</span> <span class="comment">#RSC网卡驱动模式</span></div><div class="line">advinacc=<span class="string">"1"</span> <span class="comment">#流量方向加速</span></div><div class="line">maxmode=<span class="string">"1"</span> <span class="comment">#最大传输模式</span></div></pre></td></tr></table></figure>
+<p>然后修改内核配置<code>vi /etc/sysctl.conf</code></p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div><div class="line">10</div><div class="line">11</div><div class="line">12</div><div class="line">13</div><div class="line">14</div><div class="line">15</div><div class="line">16</div><div class="line">17</div><div class="line">18</div></pre></td><td class="code"><pre><div class="line">fs.file-max = 51200</div><div class="line">net.core.rmem_max = 67108864</div><div class="line">net.core.wmem_max = 67108864</div><div class="line">net.core.netdev_max_backlog = 250000</div><div class="line">net.core.somaxconn = 4096</div><div class="line">net.ipv4.tcp_syncookies = 1</div><div class="line">net.ipv4.tcp_tw_reuse = 1</div><div class="line">net.ipv4.tcp_tw_recycle = 0</div><div class="line">net.ipv4.tcp_fin_timeout = 30</div><div class="line">net.ipv4.tcp_keepalive_time = 1200</div><div class="line">net.ipv4.ip_local_port_range = 10000 65000</div><div class="line">net.ipv4.tcp_max_syn_backlog = 8192</div><div class="line">net.ipv4.tcp_max_tw_buckets = 5000</div><div class="line">net.ipv4.tcp_fastopen = 3</div><div class="line">net.ipv4.tcp_rmem = 4096 87380 67108864</div><div class="line">net.ipv4.tcp_wmem = 4096 65536 67108864</div><div class="line">net.ipv4.tcp_mtu_probing = 1</div><div class="line">net.ipv4.tcp_congestion_control = hybla</div></pre></td></tr></table></figure>
+<h1 id="安装Shadowsocks">7. 安装Shadowsocks</h1><p>在VPN连接后，依次输入：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div></pre></td><td class="code"><pre><div class="line">apt-get update</div><div class="line">apt-get install python-pip python-m2crypto supervisor</div><div class="line">pip install shadowsocks</div></pre></td></tr></table></figure>
+<p>然后输入<code>vi /etc/shadowsocks.json</code>编辑Shadowsocks配置文件，其中”server”后面输入的是服务器IP地址，保留双引号；”server_port”后面是Shadowsocks的服务端口；”password”后面是Shadowsocks的密码，保留双引号。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div><div class="line">5</div><div class="line">6</div><div class="line">7</div><div class="line">8</div><div class="line">9</div></pre></td><td class="code"><pre><div class="line">&#123;</div><div class="line">    <span class="string">"server"</span>:<span class="string">"my_server_ip"</span>,</div><div class="line">    <span class="string">"server_port"</span>:8000,</div><div class="line">    <span class="string">"local_address"</span>: <span class="string">"127.0.0.1"</span>,</div><div class="line">    <span class="string">"local_port"</span>:1080,</div><div class="line">    <span class="string">"password"</span>:<span class="string">"mypassword"</span>,</div><div class="line">    <span class="string">"timeout"</span>:300,</div><div class="line">    <span class="string">"method"</span>:<span class="string">"aes-256-cfb"</span></div><div class="line">&#125;</div></pre></td></tr></table></figure>
+<p>然后输入<code>vi /etc/supervisor/conf.d/shadowsocks.conf</code>让shadowsocks在开机后后台默认启动。如果端口 &lt; 1024，把其中的 user=nobody 改成 user=root。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div><div class="line">2</div><div class="line">3</div><div class="line">4</div></pre></td><td class="code"><pre><div class="line">[program:shadowsocks]</div><div class="line"><span class="built_in">command</span>=ssserver -c /etc/shadowsocks.json</div><div class="line">autorestart=<span class="literal">true</span></div><div class="line">user=nobody</div></pre></td></tr></table></figure>
+<p>然后输入<code>vi /etc/default/supervisor</code>在最后加入一行：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><div class="line">1</div></pre></td><td class="code"><pre><div class="line"><span class="built_in">ulimit</span> -n 51200</div></pre></td></tr></table></figure>
+<p>此时就可以执行<code>service supervisor start</code>启动supervisor服务，并执行<code>supervisorctl reload</code>重载配置文件，通过执行<code>supervisorctl status</code>可以查看目前的运行状况，如果是Running，即说明运行正常。</p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;一直以来，我都对公有VPN服务器的安全性存有疑问。为了更好的科学上网，经过多次亲身实战，简要写了一篇攻略。&lt;/p&gt;
+&lt;h1 id=&quot;服务器选择&quot;&gt;1. 服务器选择&lt;/h1&gt;&lt;p&gt;因为我使用电信网络为主，经过对比&lt;a href=&quot;https://my.hostus.us/aff.php?aff=1584&quot;&gt;HostUS&lt;/a&gt;、&lt;a href=&quot;https://m.do.co/c/4a70cb2bd58c&quot;&gt;DigitalOcean&lt;/a&gt;、&lt;a href=&quot;http://www.ufovps.com/aff.php?aff=157&quot;&gt;UFOVPS&lt;/a&gt;、&lt;a href=&quot;https://www.aliyun.com/&quot;&gt;Aliyun HongKong&lt;/a&gt;等多家云服务器供应商实测结果，线路上&lt;a href=&quot;https://my.hostus.us/aff.php?aff=1584&quot;&gt;HostUS&lt;/a&gt;属于半CN2线路，&lt;a href=&quot;https://m.do.co/c/4a70cb2bd58c&quot;&gt;DigitalOcean&lt;/a&gt;无CN2线路，而位于香港的&lt;a href=&quot;http://www.ufovps.com/aff.php?aff=157&quot;&gt;UFOVPS&lt;/a&gt;、&lt;a href=&quot;https://www.aliyun.com/&quot;&gt;Aliyun HongKong&lt;/a&gt;虽然号称与大陆地区是CN2直连，但鉴于VPN用于科学上网，香港的国际带宽昂贵，在访问时都从美国等地绕一圈，实际效果反而不如美国的VPS。&lt;/p&gt;
+&lt;p&gt;因此经过对比，我最终选择了&lt;a href=&quot;https://my.hostus.us/aff.php?aff=1584&quot;&gt;HostUS&lt;/a&gt;的LA服务器，经测试延迟200ms左右，能够满足一般的YouTube需求，价格也非常亲民，每月最低不到5美元。传送门：&lt;a href=&quot;https://my.hostus.us/aff.php?aff=1584&quot;&gt;HostUS&lt;/a&gt;。&lt;/p&gt;
+    
+    </summary>
+    
+      <category term="IT" scheme="http://xeworld.com/categories/IT/"/>
+    
+    
+      <category term="VPN" scheme="http://xeworld.com/tags/VPN/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>与第三人相关的债务追索</title>
+    <link href="http://xeworld.com/post/thirt-party-debts/"/>
+    <id>http://xeworld.com/post/thirt-party-debts/</id>
+    <published>2015-11-18T07:44:02.000Z</published>
+    <updated>2017-04-10T01:00:27.800Z</updated>
+    
+    <content type="html"><![CDATA[<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/hint.css/2.4.1/hint.min.css"><p>先考虑几个情境下债权人A的对策：</p>
+<ol>
+<li>A借了100元给B，B借了100元给C，结果B既还不了A钱，也不问C要钱；</li>
+<li>A借了100元给B，B将100元赠与C，结果B还不了A钱；</li>
+<li>A借了100元给B，B用这100元还了之前欠C的货款，结果B还不了A钱；</li>
+<li>A借了100元给B，B与C打了个虚假诉讼，B根据法院的错误判决将100元交给了C，结果B还不了A钱；</li>
+<li>以上情况中，分别都加入一个情节：B还申请了破产。</li>
+</ol>
+<p>合同、民事诉讼等从法律效果与约束力上来看，通常具有相对性，但是法律又赋予第三人之外的利害关系人具备一定的权利，比如第三人撤销之诉、第三人代位之诉、第三人申请确认合同无效、破产程序中管理人的撤销权等等，这些在一定程度上突破了相对性的规定散落在各处法律规定之中，本文仅针对这些出自相似的法理所得的法律规则将其统一做一罗列。</p>
+<a id="more"></a>
+<h1 id="第三人撤销之诉">1. 第三人撤销之诉</h1><p>情境：A借了100元给B，B与C打了个虚假诉讼，B根据法院的错误判决将100元交给了C，结果B还不了A钱。此时A可提出第三人撤销之诉。</p>
+<p>第三人撤销之诉源自《民事诉讼法》第56条第3款：</p>
+<p><em>前两款规定的第三人，因不能归责于本人的事由未参加诉讼，但有证据证明发生法律效力的判决、裁定、调解书的部分或者全部内容错误，损害其民事权益的，可以自知道或者应当知道其民事权益受到损害之日起六个月内，向作出该判决、裁定、调解书的人民法院提起诉讼。人民法院经审理，诉讼请求成立的，应当改变或者撤销原判决、裁定、调解书;诉讼请求不成立的，驳回诉讼请求。</em></p>
+<p>第三人撤销之诉不以案件进入执行程序为要求。</p>
+<h1 id="案外人执行异议">2. 案外人执行异议</h1><p>情境：A把一台电脑借给B，C起诉B要求还钱，法院以为这台电脑是B的，欲将电脑执行拍卖了。此时A可提出执行异议。</p>
+<p>案外人执行异议源自《民事诉讼法》第225条：</p>
+<p><em>当事人、利害关系人认为执行行为违反法律规定的,可以向负责执行的人民法院提出书面异议。当事人、利害关系人提出书面异议的,人民法院应当自收到书面异议之日起十五日内审查,理由成立的,裁定撤销或者改正;理由不成立的,裁定驳回。当事人、利害关系人对裁定不服的,可以自裁定送达之日起十日内向上一级人民法院申请复议。</em></p>
+<p>案外人执行异议以案件进入执行程序为前提。</p>
+<h1 id="案外人申请再审">3. 案外人申请再审</h1><p>情境：A把一个房子租给B，C起诉B说房子是C的，法院判决房子属于C。此时A可提出执行异议，被驳回后可提出再审申请。</p>
+<p>案外人申请再审源自《民事诉讼法》第227条：</p>
+<p><em>执行过程中,案外人对执行标的提出书面异议的,人民法院应当自收到书面异议之日起十五日内审查,理由成立的,裁定中止对该标的的执行;理由不成立的,裁定驳回。案外人、当事人对裁定不服,认为原判决、裁定错误的,依照审判监督程序办理;与原判决、裁定无关的,可以自裁定送达之日起十五日内向人民法院提起诉讼。</em></p>
+<p>案外人申请再审以案件进入执行程序为前提，且执行所依据的判决本身也存在错误。</p>
+<h1 id="第三人申请确认合同无效">4. 第三人申请确认合同无效</h1><p>情境：A把100元给B，让B帮忙买个包子。B与C恶意串通，用这100元买了C的一个包子，并按照100元的价格写了合同，开了发票。此时A可申请确认买卖合同无效。</p>
+<p>第三人申请确认合同无效源自《合同法》第52条：</p>
+<p><em>有下列情形之一的，合同无效：<br>(二)恶意串通，损害国家、集体或者第三人利益；</em></p>
+<p>第三人申请确认合同无效的难点在于“恶意串通”的证明，通常采取的是有条件的适用推定，一般情形包括债权人债务人恶意串通侵害保证人的利益、房屋买卖双方恶意串通侵害承租人的优先购买权、招投标双方恶意串通损害其他投标人的利益、分家析产案件中恶意串通虚构债务减少共有财产损害其他共有人的利益等等。</p>
+<h1 id="第三人申请撤销合同">5. 第三人申请撤销合同</h1><p>情境：A借了100元给B，B将100元赠与C，结果B还不了A钱。此时A可申请撤销赠与合同。</p>
+<p>第三人申请撤销合同源自《合同法》第74条第1款：</p>
+<p><em>因债务人放弃其到期债权或者无偿转让财产，对债权人造成损害的，债权人可以请求人民法院撤销债务人的行为。债务人以明显不合理的低价转让财产，对债权人造成损害，并且受让人知道该情形的，债权人也可以请求人民法院撤销债务人的行为。</em></p>
+<h1 id="第三人代位之诉">6. 第三人代位之诉</h1><p>情境：A借了100元给B，B借了100元给C，两份债务均已到期，结果B既还不了A钱，也不问C要钱。此时A可提出第三人代位之诉。</p>
+<p>第三人代位之诉源自《合同法》第73条：</p>
+<p><em>因债务人怠于行使其到期债权，对债权人造成损害的，债权人可以向人民法院请求以自己的名义代位行使债务人的债权，但该债权专属于债务人自身的除外。代位权的行使范围以债权人的债权为限。债权人行使代位权的必要费用，由债务人负担。</em></p>
+<p>其中“专属于债务人自身的除外”所指的债权规定于合同法司法解释（一）：基于扶养关系、抚养关系、赡养关系、继承关系产生的给付请求权和劳动报酬、退休金、养老金、抚恤金、安置费、人寿保险、人身伤害赔偿请求权等权利。</p>
+<h1 id="破产程序中偏颇清偿的撤销">7. 破产程序中偏颇清偿的撤销</h1><p>情境：A借了100元给B，B用这100元还了之前欠C的货款，结果B还不了A钱，到法院申请破产。此时A可请求B的破产管理人撤销B清偿C货款的行为。</p>
+<p>破产程序中偏颇清偿的撤销源自《企业破产法》第32条：</p>
+<p><em>人民法院受理破产申请前六个月内,债务人有本法第二条第一款规定的情形,仍对个别债权人进行清偿的,管理人有权请求人民法院予以撤销。但是,个别清偿使债务人财产受益的除外。</em></p>
+<p>偏颇清偿的撤销不以C的恶意为前提。</p>
+<h1 id="破产程序中欺诈性转让的撤销">8. 破产程序中欺诈性转让的撤销</h1><p>情境：A借了100元给B，B将100元赠与C，结果B还不了A钱，到法院申请破产。此时A可请求B的破产管理人撤销B的赠与行为。</p>
+<p>破产程序中欺诈性转让的撤销源自《企业破产法》第31条：</p>
+<p><em>人民法院受理破产申请前一年内,涉及债务人财产的下列行为,管理人有权请求人民法院予以撤销:<br>(一)无偿转让财产的;<br>(二)以明显不合理的价格进行交易的;<br>(三)对没有财产担保的债务提供财产担保的;<br>(四)对未到期的债务提前清偿的;<br>(五)放弃债权的。</em></p>
+<p>其中第（一）、（二）、（五）项内容与合同法第74条有相似之处，只是实施主体不同，管理人处于对债务人财产的管理权享有该等撤销权（个人感觉这里的1年与合同法第74条适用通用的2年时效的不一致，有一定的妥协折中意味）。</p>
+<p>以上仅罗列目前我能想到的有关第三人债务追索的情形，后续补充吧。</p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;先考虑几个情境下债权人A的对策：&lt;/p&gt;
+&lt;ol&gt;
+&lt;li&gt;A借了100元给B，B借了100元给C，结果B既还不了A钱，也不问C要钱；&lt;/li&gt;
+&lt;li&gt;A借了100元给B，B将100元赠与C，结果B还不了A钱；&lt;/li&gt;
+&lt;li&gt;A借了100元给B，B用这100元还了之前欠C的货款，结果B还不了A钱；&lt;/li&gt;
+&lt;li&gt;A借了100元给B，B与C打了个虚假诉讼，B根据法院的错误判决将100元交给了C，结果B还不了A钱；&lt;/li&gt;
+&lt;li&gt;以上情况中，分别都加入一个情节：B还申请了破产。&lt;/li&gt;
+&lt;/ol&gt;
+&lt;p&gt;合同、民事诉讼等从法律效果与约束力上来看，通常具有相对性，但是法律又赋予第三人之外的利害关系人具备一定的权利，比如第三人撤销之诉、第三人代位之诉、第三人申请确认合同无效、破产程序中管理人的撤销权等等，这些在一定程度上突破了相对性的规定散落在各处法律规定之中，本文仅针对这些出自相似的法理所得的法律规则将其统一做一罗列。&lt;/p&gt;
+    
+    </summary>
+    
+      <category term="法律" scheme="http://xeworld.com/categories/%E6%B3%95%E5%BE%8B/"/>
+    
+      <category term="争议解决" scheme="http://xeworld.com/categories/%E6%B3%95%E5%BE%8B/%E4%BA%89%E8%AE%AE%E8%A7%A3%E5%86%B3/"/>
+    
+    
+      <category term="第三人撤销" scheme="http://xeworld.com/tags/%E7%AC%AC%E4%B8%89%E4%BA%BA%E6%92%A4%E9%94%80/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>可由被告承担诉讼费的案件类型</title>
+    <link href="http://xeworld.com/post/null/"/>
+    <id>http://xeworld.com/post/null/</id>
+    <published>2014-06-11T10:05:49.000Z</published>
+    <updated>2017-04-10T01:00:27.800Z</updated>
+    
+    <content type="html"><![CDATA[<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/hint.css/2.4.1/hint.min.css"><h1 id="交通事故案件律师费可以要求对方承担">1. 交通事故案件律师费可以要求对方承担</h1><p>《民法通则》第119条规定：“侵害公民身体造成伤害的，应当赔偿医疗费、因误工减少的收入、残废者生活补助费等费用;造成死亡的，并应当支付丧葬费、死者生前扶养的人必要的生活费等费用。”《最高人民法院关于审理人身损害赔偿案件适用法律若干问题的解释》第17条第3款规定： “受害人死亡的，赔偿义务人除应当根据抢救治疗情况赔偿本条第一款规定的相关费用外，还应当赔偿丧葬费、被抚养人生活费、死亡补偿费以及受害人亲属办理丧葬事宜支出的交通费、住宿费和误工损失等其他合理费用。” 上海市高级人民法院早在2000年作出的 “关于印发 《关于民事案件审理的几点具体意见》的通知中针对人身损害赔偿案件提出 “律师费在性质上属于财产利益，原则上可作为损失。”</p>
+<p>交通事故案件在司法实践中，律师费是否支持各地法院做法不一样。比如：合肥一般不支持律师费，但上海支持。2005年的上海高级人民法院关于下发《关于审理道路交通事故损害赔偿案件若干问题的解答》的通知中，明确规定“当事人请求赔偿为处理事故产生的费用（如交通费、误工费、取证费、律师费等）的，若该费用已实际发生，且为必须合理，可予支持。”</p>
+<a id="more"></a>
+<h1 id="双方在合同中明确约定律师费由败诉方承担">2. 双方在合同中明确约定律师费由败诉方承担</h1><p>根据合同自由原则，只要双方当事人在合同中有约定律师费由败诉方承担，则在起诉或仲裁时，关于律师费的诉讼请求一般都会得到支持。因此，合同双方在拟定合同时，可将律师费列为违约赔偿内容中，甚至可以将律师费的承担方式、承担标准也详细列明。在拟定这样的违约条款时，须特别注意必须明确写明“律师费”，其他如“实现债权的费用”等均属约定不明确，可能不会得到关于律师费的支持，法院对此约定的审查非常严格。原告在起诉时须提交与律师事务所签订的委托合同和律师事务所开具的律师费发票作为律师费支付的证据。但是支持的具体数量会取决于法官的自由裁量权，根据案件性质酌情支持，通常法院会支持“合理”的律师费用，而并非全部的费用。</p>
+<h1 id="法律、司法解释明确规定由败诉方承担胜诉方合理的律师费">3. 法律、司法解释明确规定由败诉方承担胜诉方合理的律师费</h1><h2 id="法律援助案件：">3.1. 法律援助案件：</h2><p>《最高人民法院司法部关于民事法律援助工作若干问题的联合通知》第7条：“法律援助人员办理法律援助案件所需差旅费、文印费、交通通讯费、调查取证费等办案必要开支，受援方列入诉讼请求的，法院可根据具体情况判由非受援的败诉方承担”。因此律师在办理法律援助案件时，建议将律师费列入诉讼请求，要求被告方承担。</p>
+<h2 id="著作权侵权案件：">3.2. 著作权侵权案件：</h2><p>《著作权法》第48条规定： “侵犯著作权或者与著作权有关的权利的，侵权人应当按照权利人的实际损失给予赔偿;实际损失难以计算的，可以按照侵权人的违法所得给予赔偿。赔偿数额还应当包括权利人为制止侵权行为所支付的合理开支”。根据《最高人民法院关于审理著作权民事纠纷案件适用若干问题的解释》第26条的规定，“著作权法第四十八条第一款规定的制止侵权行为所支付的合理开支，包括权利人或者委托代理人对侵权行为进行调查、取证的合理费用。人民法院根据当事人的诉讼请求和具体案情，可以将符合国家有关部门规定的律师费用计算在赔偿范围内”。</p>
+<h2 id="商标侵权案件：">3.3. 商标侵权案件：</h2><p>《最高人民法院 关于审理商标民事纠纷案件适用法律若干问题的解释》第17条明确规定： “商标法第56条第1款规定的制止侵权行为所支付的合理开支，包括权利人或者委托代理人对侵权行为进行调查、取证的合理费用。人民法院根据当事人的诉讼请求和案件具体情况，可以将符合国家有关部门规定的律师费用计算在赔偿范围内。”</p>
+<h2 id="专利侵权案件：">3.4. 专利侵权案件：</h2><p>《最高人民法院关于审理专利纠纷案件适用法律问题的若干规定》第22条规定： “人民法院根据权利人的请求以及具体案情，可以将权利人因调查、制止侵权所支付的合理费用计算在赔偿数额范围之内。”</p>
+<h2 id="不正当竞争案件">3.5. 不正当竞争案件</h2><p>《反不正当竞争法》第20条规定：经营者违反本法规定，给被侵害的经营者造成损害的，应当承担损害赔偿责任，被侵害的经营者的损失难以计算的，赔偿额为侵权人在侵权期间因侵权所获得的利润;并应当承担被侵害的经营者因调查该经营者侵害其合法权益的不正当竞争行为所支付的合理费用。</p>
+<h2 id="合同纠纷中债权人行使撤销权诉讼案件：">3.6. 合同纠纷中债权人行使撤销权诉讼案件：</h2><p>最高人民法院 《关于适用〈中华人民共和国合同法〉若干问题的解释 (一)》第26条明确规定：“债权人行使撤销权所支付的律师代理费、差旅费等必要费用，由债务人负担;第三人有过错的，应当适当分担。”</p>
+<h2 id="担保权诉讼案件：">3.7. 担保权诉讼案件：</h2><p>《中华人民共和国担保法》第21条规定： “保证担保的范围包括主债权及利息、违约金、损害赔偿及实现债权的费用。” 分析：债务人如约履行债务，债权人的权益即能得到实现，由于债务人不履行义务，债权人不得不通过诉讼的方式来实现权利，由此所支付的律师费是当事人为实现其债权而支出的费用，属于当事人的财产损失，《担保法》第21条规定的 “实现债权的费用”应当包括合理的律师费。</p>
+<h2 id="仲裁案件">3.8. 仲裁案件</h2><p>仲裁可对律师费由败诉方承担的仲裁请求予以支持。1994、1995、1998、2000版本的《中国国际经济贸易仲裁委员会仲裁规则》(简称《贸仲规则》)都有类似规定，仲裁庭有权在裁决书中裁定败诉方应当补偿胜诉方因为办理案件所支出的部分合理的费用，但补偿金额最多不得超过胜诉方胜诉金额的10%。在实践中，此费用也包括律师费，但有胜诉金额10%的比例限制。而最新的《贸仲规则》(2005年版)则取消了此10%的限额规定，第46条规定：“费用承担：(一)仲裁庭有权在仲裁裁决书中裁定当事人最终应向仲裁委员会支付的仲裁费和其他费用。(二)仲裁庭有权根据案件的具体情况在裁决书中裁定败诉方应当补偿胜诉方因办理案件而支出的合理的费用。仲裁庭裁定败诉方补偿胜诉方因办理案件而支出的费用是否合理时，应具体考虑案件的裁决结果、复杂程度、胜诉方当事人及/或代理人的实际工作量以及案件的争议金额等因素”。显然，这给了仲裁庭更大的自由裁量权。</p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;h1 id=&quot;交通事故案件律师费可以要求对方承担&quot;&gt;1. 交通事故案件律师费可以要求对方承担&lt;/h1&gt;&lt;p&gt;《民法通则》第119条规定：“侵害公民身体造成伤害的，应当赔偿医疗费、因误工减少的收入、残废者生活补助费等费用;造成死亡的，并应当支付丧葬费、死者生前扶养的人必要的生活费等费用。”《最高人民法院关于审理人身损害赔偿案件适用法律若干问题的解释》第17条第3款规定： “受害人死亡的，赔偿义务人除应当根据抢救治疗情况赔偿本条第一款规定的相关费用外，还应当赔偿丧葬费、被抚养人生活费、死亡补偿费以及受害人亲属办理丧葬事宜支出的交通费、住宿费和误工损失等其他合理费用。” 上海市高级人民法院早在2000年作出的 “关于印发 《关于民事案件审理的几点具体意见》的通知中针对人身损害赔偿案件提出 “律师费在性质上属于财产利益，原则上可作为损失。”&lt;/p&gt;
+&lt;p&gt;交通事故案件在司法实践中，律师费是否支持各地法院做法不一样。比如：合肥一般不支持律师费，但上海支持。2005年的上海高级人民法院关于下发《关于审理道路交通事故损害赔偿案件若干问题的解答》的通知中，明确规定“当事人请求赔偿为处理事故产生的费用（如交通费、误工费、取证费、律师费等）的，若该费用已实际发生，且为必须合理，可予支持。”&lt;/p&gt;
+    
+    </summary>
+    
+      <category term="法律" scheme="http://xeworld.com/categories/%E6%B3%95%E5%BE%8B/"/>
+    
+      <category term="争议解决" scheme="http://xeworld.com/categories/%E6%B3%95%E5%BE%8B/%E4%BA%89%E8%AE%AE%E8%A7%A3%E5%86%B3/"/>
+    
+    
+      <category term="诉讼费" scheme="http://xeworld.com/tags/%E8%AF%89%E8%AE%BC%E8%B4%B9/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>经济法与民法的界限——以法所追求的公平正义为视角</title>
+    <link href="http://xeworld.com/post/difference-between-economic-law-and-civil-law/"/>
+    <id>http://xeworld.com/post/difference-between-economic-law-and-civil-law/</id>
+    <published>2014-02-21T08:04:42.000Z</published>
+    <updated>2017-04-10T01:00:27.784Z</updated>
+    
+    <content type="html"><![CDATA[<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/hint.css/2.4.1/hint.min.css"><hr>
+<p>摘要：经济法与普通民法一样，都以公平正义为价值追求。然而公平正义是一个概括的表述，其内涵千差万别。经济法这一学科能够独立，必然有本质追求上的特别之处。本文从法的追求——公平正义的内涵为视角，探究经济法区分普通民商法的界限。</p>
+<hr>
+<p>所有的法律都能在经济学上得到一定的理论支持，但是能得到理论支持并不代表经济学因素就是立法考虑的重点。换言之，经济法规则的制定以经济学规律主导的，而普通民商法规则的制定从过程上看未过多参考经济学理论，尽管从结论上看规则本身与经济学理论得出的结论并不矛盾。</p>
+<p>为了说明经济法与普通民法在制定过程中的不同，我选取了之前略去的法律维度，从法的追求上说明两者的立法基础上有差。</p>
+<a id="more"></a>
+<p>古往今来，法律究竟是什么，答案一直在变化。但对于当今文明社会而言，公平正义已然成为法最大的追求，法律就是通过规定权利义务的方式实现社会公平。但是这个公平正义观在不同的部门法中又有区别，本文简要以民法为比照对象，通过民法的公平观与经济法的公平观两者的对比区分，来划出民法与经济法之间的界限。</p>
+<h1 id="民法的公平正义">1. 民法的公平正义</h1><p>谈到民法中的公平正义，首先联想到的便是公平原则。实然，公平原则是民法公平正义价值追求中最主要的组成部分。</p>
+<p>民法是调整平等主体之间财产关系和人身关系的基本法，作为最主要的私法，意思自治是民法公平正义观中最关键的内涵。因此对于民法而言，民法调整的民事主体应当依据社会公认的公平观念从事民事活动，维持各主体间的利益平衡。亦即，民事主体之间确立民事法律关系之时，已经本着公平原则为各方设定相应的权利义务，每个主体享受的权利与承受的义务对等。</p>
+<p>在意思自治情况下要完成所设立的权利义务相平衡，必然要求便是民事主体之间地位平等。在同等话语权下达成的协议才可能是平衡的，这意味着民法在追求公平正义之时，必须先保障形式上各个主体的公平对等，以使各方的意志能够得到平等的尊重和保障。</p>
+<p>换言之，民法追求的公平，是带有绝对色彩的公平，所有主体生而平等，在承认主体资格的前提下，各个主体间的权利义务在初始状态下不应有任何不同。</p>
+<h1 id="经济法的公平正义">2. 经济法的公平正义</h1><p>相对于前述绝对化的公平正义，经济法的公平有相对的色彩，其追求的公平，更多包含长久的公平。</p>
+<p>经济法的这种公平正义观，也被国内学者称为实质公平。李昌麒教授将实质公平定义为：“经济法上的公平，是在承认经济主体的资源和个人享赋等方面差异的前提下而追求的一种结果上的公平，即实质公平。”<sup id="fnref:1"><a href="#fn:1" rel="footnote"><span class="hint--top-right hint--error hint--large" aria-label=" 李昌麒. 经济法学【M】. 北京:中国政法大学出版社，1999: 85.">[1]</span></a></sup>雍灵博士则认为，经济法的实质公平的定义应为：“在一定时间内利益评价主体认为现行经济法律、法规对其切身利益有利，所做出的正面评价。简言之就是经济法主体认为其自身利益实质上得到了公正待遇。”<sup id="fnref:2"><a href="#fn:2" rel="footnote"><span class="hint--top-right hint--error hint--large" aria-label=" 雍灵. 经济法视野中的公平【D】. 重庆:西南政法大学博士论文,2006.
+">[2]</span></a></sup></p>
+<p>从典型的几个经济法来看，缩小贫富差距是税法的一个目的，累进制税率的设置对富人而言是不公的，但这种不公又是相对公平的状态；反垄断法对经营者集中的行为作出限制，对大企业而言是不公的，因为其追求的是公平竞争的市场秩序；环境保护法对生态的可持续发展作出规定，则是站在长久角度看待公平这个话题。</p>
+<p>经济法为了追求实质公平，将市场主体的权利义务作出倾斜性配置，并对整体经济进行宏观调控。</p>
+<h1 id="人性善恶定义的差异">3. 人性善恶定义的差异</h1><p>谈到民法的价值追求与经济法的价值追求，还有一个很有意思的点值得关注，就是两者对人性本善与人性本恶的判断上截然不同。</p>
+<p>首先看民法。细数民法具体的原则，公平正义、诚实信用、平等自愿、公诉良俗。说白了，就是在说，何为良民。亦即，民法持人性本善之观点，以善人的行为准则来制定民事活动的规则。</p>
+<p>反观经济法。经济法的基本原则究竟是什么，尚在争论，本文暂以协调经济、效率公平、利益兼顾和可持续发展为“标准答案”探讨。经济人是逐利的，逐利逐利，虽然有双赢局面，但不得不承认，大多情形下，逐利以限制或剥夺他人利益为前提。资源有限，作为理性的经济人必然为了扩大自身利益而想方设法限制他人利益。逐利性在我看来就是经济法对人性本恶的判断，经济法就是以人性本恶为出发点，从恶人的角度看待各类经济活动，但是恶人不能太过分，逐利不能只为利。因此才有各类经济法规规制过恶的经济活动。</p>
+<p>以信息对称为例解释上述论断。假设双方对信息的掌握不均等，那么双方订立的合同在民法上可能被认定为显失公平的合同，作为善人，怎么可以欺负不懂的人呢！因此民法上认为大家应该开诚布公订合同，信息共享，并将这类“坏”人订立的合同在效力上赋予瑕疵。但是反观经济法，经济活动中信息不对称是必然存在的，我甚至认为，信息不对称才是构建起整个经济活动的核心，穷人与富人的区别，关键是在获取信息上的区别。因此经济法上对信息不对称是认可的，无非当强势的生产商用这种信息优势欺负消费者时，经济法才认为这种强势已经恶过头，所以需要规制。</p>
+<h1 id="结语">4. 结语</h1><p>虽然本文说明了经济法与普通民法所追求的公平正义有差别，但经济法与行政法之间的界限也是不易分辨的。行政法所追求的公平正义，更多体现在限制公权力上，而经济法在追求实质正义过程中，也引入了行政力量。那么经济法中的行政力量与普通的行政法又有何区别？</p>
+<p>乍一看经济法带有浓重的行政法色彩，许多措施都需要行政机关实施。如果说经济法侧重于将人性定义为恶，那么行政法更多侧重于将行政机关定义为恶，为了防止其无法无天，需要预先设立各类权力界限和行事准则，规范其行为。可是这亦非绝对，在经济法的税法分支有税收法定原则，目的之一就是防止行政机关随意征税。那么这样的出发点是否意味着税法更偏向于行政法？</p>
+<p>直至现在，经济法与其他法律之间的界限一直模糊，各种判断标准都有一定的合理性与局限性，在以后的研究中，我会继续思考这个问题。</p>
+<div id="footnotes"><hr><div id="footnotelist"><ol style="list-style: none; padding-left: 0; margin-left: 40px"><li id="fn:1"><span style="display: inline-block; vertical-align: top; padding-right: 10px; margin-left: -40px">1.</span><span style="display: inline-block; vertical-align: top; margin-left: 10px;">李昌麒. 经济法学【M】. 北京:中国政法大学出版社，1999: 85.<a href="#fnref:1" rev="footnote"> ↩</a></span></li><li id="fn:2"><span style="display: inline-block; vertical-align: top; padding-right: 10px; margin-left: -40px">2.</span><span style="display: inline-block; vertical-align: top; margin-left: 10px;">雍灵. 经济法视野中的公平【D】. 重庆:西南政法大学博士论文,2006.<a href="#fnref:2" rev="footnote"> ↩</a></span></li></ol></div></div>]]></content>
+    
+    <summary type="html">
+    
+      &lt;hr&gt;
+&lt;p&gt;摘要：经济法与普通民法一样，都以公平正义为价值追求。然而公平正义是一个概括的表述，其内涵千差万别。经济法这一学科能够独立，必然有本质追求上的特别之处。本文从法的追求——公平正义的内涵为视角，探究经济法区分普通民商法的界限。&lt;/p&gt;
+&lt;hr&gt;
+&lt;p&gt;所有的法律都能在经济学上得到一定的理论支持，但是能得到理论支持并不代表经济学因素就是立法考虑的重点。换言之，经济法规则的制定以经济学规律主导的，而普通民商法规则的制定从过程上看未过多参考经济学理论，尽管从结论上看规则本身与经济学理论得出的结论并不矛盾。&lt;/p&gt;
+&lt;p&gt;为了说明经济法与普通民法在制定过程中的不同，我选取了之前略去的法律维度，从法的追求上说明两者的立法基础上有差。&lt;/p&gt;
+    
+    </summary>
+    
+      <category term="杂谈" scheme="http://xeworld.com/categories/%E6%9D%82%E8%B0%88/"/>
+    
+    
+      <category term="经济法" scheme="http://xeworld.com/tags/%E7%BB%8F%E6%B5%8E%E6%B3%95/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>经济法是什么-从法律、市场和金融三个维度来讨论</title>
+    <link href="http://xeworld.com/post/what-is-economic-law--from-three-points/"/>
+    <id>http://xeworld.com/post/what-is-economic-law--from-three-points/</id>
+    <published>2013-11-14T09:25:26.000Z</published>
+    <updated>2017-04-10T07:13:37.146Z</updated>
+    
+    <content type="html"><![CDATA[<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/hint.css/2.4.1/hint.min.css"><p>大家好，今天要和大家谈一个范围比较大的问题，就是经济法到底是什么，或者说，经济法是干什么的？这是一个很大的话题，其中可能包含一些乍一看很荒谬的问题。</p>
+<h1 id="法律篇">1. 法律篇</h1><p>经济法是不是有关经济的法律，或者说调整经济活动中所有法律关系的相关法律制度的总和？大家先看一下一本普通的法学院《经济法》教材和CPA考试教材《经济法》中，对经济法是如何分章的：</p>
+<p><img src="http://xeworld.oss-cn-hangzhou.aliyuncs.com/sources/posts/2013.11.14.what-is-economic-law--from-three-points/3005871276393452163.jpg" alt=""></p>
+<p>那么我们法学为何要将这些经济活动中一部分的法律单独划出来，作为经济法的研究对象？这个现有的法律划分是否准确？为何需要有经济法存在？</p>
+<p>因此可以开始讨论这个最重要的话题了，经济法的本质宗旨是什么？</p>
+<a id="more"></a>
+<p>首先看看法的本质论：</p>
+<p><img src="http://xeworld.oss-cn-hangzhou.aliyuncs.com/sources/posts/2013.11.14.what-is-economic-law--from-three-points/714102016015075843.jpg" alt=""></p>
+<p>我们所研究的经济法，究竟是哪一层次的法律？</p>
+<p>看看法条是怎么规定的吧：</p>
+<p><img src="http://xeworld.oss-cn-hangzhou.aliyuncs.com/sources/posts/2013.11.14.what-is-economic-law--from-three-points/6597285270937049763.jpg" alt=""></p>
+<p>这里仅列举了部分法条总则部分的规定，从这些总则中可以看到，都有维护经济秩序，提高经济效益的表述，在这两个目标中，维护经济秩序实际上是为了经济更有效运行，以此提高经济效益，促进经济发展。因此整体上，经济法都有这样的目标：提高经济效益。</p>
+<p>但是我们说的，普通的民法体系是否也有这样的价值目标呢？</p>
+<p>还是从法条中寻找依据：</p>
+<p><img src="http://xeworld.oss-cn-hangzhou.aliyuncs.com/sources/posts/2013.11.14.what-is-economic-law--from-three-points/1702923609200117476.jpg" alt=""></p>
+<p>一个疑惑产生了，普通的民商法中间也有维护经济秩序这样的目标，那么这些法和我们通常所说的经济法之间在功能上有什么样的区别呢？</p>
+<p>我们认为，经济法之所以独立，就在于真正的出发点和调控的原理和基础与普通民商法有区别。</p>
+<p>再回到这张法本质的划分表：</p>
+<p><img src="http://xeworld.oss-cn-hangzhou.aliyuncs.com/sources/posts/2013.11.14.what-is-economic-law--from-three-points/714102016015075843.jpg" alt=""></p>
+<p>普通民商法，侧重点在秩序，维护公平、自由、合理、平等的状态，也就是侧重于第二级法律本质，约束主体行为的自由，并制定规则与秩序；而研究经济法，侧重点在第三级经济本质上，是从经济如何才能更好的运行这个角度来制定相关行为规则，出发点与普通民商法有差异。</p>
+<h1 id="市场篇">2. 市场篇</h1><p>关于经济法出现的背景，是市场的失灵。市场失灵主要有四种表现形式：不完全竞争（垄断）、外部性、公共物品短缺和信息不对称。</p>
+<p>针对这四种情形，相应产生了相应的法律进行调节：</p>
+<p><img src="http://xeworld.oss-cn-hangzhou.aliyuncs.com/sources/posts/2013.11.14.what-is-economic-law--from-three-points/1936829314846281288.jpg" alt=""></p>
+<p>这些法律都是政府对市场活动进行的管制，那么这种管制的合法性与合理性基础是什么？</p>
+<p><img src="http://xeworld.oss-cn-hangzhou.aliyuncs.com/sources/posts/2013.11.14.what-is-economic-law--from-three-points/2502031067999050678.jpg" alt=""></p>
+<p>如果说合法性基础是社会公共利益，合理性基础又是什么？我觉得是微观经济学的支持，而这也引入了法经济学与经济法学这样无聊的争论。</p>
+<h1 id="金融篇">3. 金融篇</h1><p>政府什么时候才能进行管制，管制要进行到什么程度，这些构成了经济法中管制手段的合理性基础。关于这个基础究竟是什么，也有两派观点，一方认为是微观经济学中如何进行资源配置最优，一方认为还是在传统的社会公益，我比较赞成前者的观点。</p>
+<p>下面以部分法律的规定，来阐述这些法条背后的经济学基础：</p>
+<h2 id="税收">3.1. 税收</h2><p>国家为什么要收税，这个话题不再论证，但是每种商品应该收多少比例的税，为什么有的税率高，有的税率低？</p>
+<p><img src="http://xeworld.oss-cn-hangzhou.aliyuncs.com/sources/posts/2013.11.14.what-is-economic-law--from-three-points/6597937281332680135.jpg" alt=""></p>
+<p>在没有税收的情形下，供需曲线在P=10的地方相交，达成平衡。如果此时向买方收税，会形成如下的局面：</p>
+<p><img src="http://xeworld.oss-cn-hangzhou.aliyuncs.com/sources/posts/2013.11.14.what-is-economic-law--from-three-points/1293377518003498344.jpg" alt=""></p>
+<p>由于向买者征收税款，需求曲线D1向下移动到D2，在新的需求曲线中，形成了新的供需平衡点，如下图所示：</p>
+<p><img src="http://xeworld.oss-cn-hangzhou.aliyuncs.com/sources/posts/2013.11.14.what-is-economic-law--from-three-points/2871607712502204708.jpg" alt=""></p>
+<p>由于需求曲线的移动，产量从500下降为450，同时成交价格从10元升为11元。消费者需要支付的金额从10元上升为11元，同时生产者得到的价款从10元降低到9.5元，所以我们说1.5元的税款消费者承担了1元，供给者承担了0.5元。</p>
+<p>若改为向供给者收税，那么情形会变化如下：</p>
+<p><img src="http://xeworld.oss-cn-hangzhou.aliyuncs.com/sources/posts/2013.11.14.what-is-economic-law--from-three-points/2613213683799765348.jpg" alt=""></p>
+<p>对生产者征税使得其供求曲线向上移动，达成新的均衡：</p>
+<p><img src="http://xeworld.oss-cn-hangzhou.aliyuncs.com/sources/posts/2013.11.14.what-is-economic-law--from-three-points/1958784363029776570.jpg" alt=""></p>
+<p>新的成交价格依旧为11元，消费者依旧需要支付11元，生产者也依旧只能收到9.5元的实际价款，因此我们说，消费者依旧承担了1元的税负，生产者依旧承担了0.5元的税负。和上面的情形完全一致！</p>
+<p>从这个例子中可以看到，无论法律规定谁是纳税义务人，最终税务的承担不会因为究竟谁来交税而发生变化，因此税法中不需要无休止的争论税款应该由谁来交，如果非要讨论这个话题，起到的作用无非是何种收法更顺从民意而已。</p>
+<p>将税收的话题进行下去，究竟消费者与供给者在税务承担的多少上是如何决定的？</p>
+<p><img src="http://xeworld.oss-cn-hangzhou.aliyuncs.com/sources/posts/2013.11.14.what-is-economic-law--from-three-points/3751217014722979593.jpg" alt=""></p>
+<p>弹性是指对价格的敏感程度，奢侈品弹性大，曲线平缓，必需品弹性小，曲线竖直。那么在供给相对于需求更富有弹性的情形下，我们可以看到，生产者相对于消费者承担了更多的税收。</p>
+<p><img src="http://xeworld.oss-cn-hangzhou.aliyuncs.com/sources/posts/2013.11.14.what-is-economic-law--from-three-points/889742401482699096.jpg" alt=""></p>
+<p>相反，如果消费相对于需求更富有弹性的情形下，相应的，从图上可以看出，消费者相对于生产者要承担更多的税负比例。</p>
+<p>从上面两张图可以看出，弹性决定了税务的最终承担，对于消费者而言，必需品的税务大部分由消费者承担，因此国家不宜在民生必需品上过多的收税，这在一方面决定了税率的高低。当然，我们说，弹性是决定税率高低的理由，还有另一个原因，就是无谓损失。</p>
+<p><img src="http://xeworld.oss-cn-hangzhou.aliyuncs.com/sources/posts/2013.11.14.what-is-economic-law--from-three-points/6597546954704818893.jpg" alt=""></p>
+<p>在没有税收的情形下，均衡产量为QE，此时市场剩余为ABCDEF的总和；当存在税收的情形下，新的均衡产量为QT，新的市场剩余为ABDF的总和。相比之下，市场剩余减少了CE的总和，这部分也被称为无谓损失。如果经济法的目标是为了经济更好的发展，就要追求无谓损失的最小化。我们来看一下无谓损失和弹性之间的关系：</p>
+<p><img src="http://xeworld.oss-cn-hangzhou.aliyuncs.com/sources/posts/2013.11.14.what-is-economic-law--from-three-points/1671116936831414452.jpg" alt=""></p>
+<p><img src="http://xeworld.oss-cn-hangzhou.aliyuncs.com/sources/posts/2013.11.14.what-is-economic-law--from-three-points/2648116580911904046.jpg" alt=""></p>
+<p><img src="http://xeworld.oss-cn-hangzhou.aliyuncs.com/sources/posts/2013.11.14.what-is-economic-law--from-three-points/164381386499164123.jpg" alt=""></p>
+<p><img src="http://xeworld.oss-cn-hangzhou.aliyuncs.com/sources/posts/2013.11.14.what-is-economic-law--from-three-points/6597693189751312705.jpg" alt=""></p>
+<p>对比上述的图，弹性越大，同样的税收规模会造成更多的无谓损失。从这个角度看，似乎如果单纯追求经济效益的最大化，我们更应该对必需品征税，而降低奢侈品的税收？究竟应当对奢侈品征税还是应当对必需品征税？在课堂上，学长提出了一个非常重要的指标，就是实际产量。因为必需品的基数大，奢侈品的数量小，而我们图中所针对的都是讲相对数量，没有体现绝对数量和绝对税款数额。再加上考虑到民生问题，确实不宜向必需品课征更多的税。</p>
+<p>除此以外，如何确定税率，或者说，税收规模应当为多少？税收规模与税收收入之间存在二次函数的关系，税收存在税收收入的最大化与尽量减少无谓损失之间的矛盾。这也是我们需要考虑的问题。</p>
+<h2 id="为何需要法律解决外部性问题？">3.2. 为何需要法律解决外部性问题？</h2><p>科斯定理：如果私人各方可以无成本地就资源配置进行协商，那么，他们可以自己解决外部性问题。</p>
+<p>这部分内容黄老师的法经济学课程中已经有了较为详细的讨论，因此这里不在具体阐述，只是拿来解释，为什么我们需要环境保护法，因为私人协商永远不可能达到没有交易成本的程度，此时法律不可欠缺，法律起到降低交易成本的作用。</p>
+<h2 id="再举一个例子，在认定倾销价格的时候">3.3. 再举一个例子，在认定倾销价格的时候</h2><p><img src="http://xeworld.oss-cn-hangzhou.aliyuncs.com/sources/posts/2013.11.14.what-is-economic-law--from-three-points/3333508149284728265.jpg" alt=""></p>
+<p>MC是边际成本，在竞争企业中，MC也就是供给曲线。MR是边际收益，当边际成本等于边际收益时，企业的利润最大化。对于任何一家理智的、有畅通销售渠道的企业而言，必然会选择Q1作为实际产量，也就是边际成本等于边际收益的产量。</p>
+<p><img src="http://xeworld.oss-cn-hangzhou.aliyuncs.com/sources/posts/2013.11.14.what-is-economic-law--from-three-points/6597694289262940510.jpg" alt=""></p>
+<p>对于竞争企业而言，其产量不影响市场价格，因此边际收益和市场价格是一致的，当产品售价低于平均成本，但是高于边际成本的时候，根据前面的前提，作为一个理智的企业，一定会继续生产，直至边际成本等于平均成本。所以低于平均成本的价格进行销售，对于竞争企业而言，不一定构成低价倾销。</p>
+<h2 id="为何需要反垄断？">3.4. 为何需要反垄断？</h2><p>分别看一看竞争市场与垄断市场的情况：</p>
+<p><img src="http://xeworld.oss-cn-hangzhou.aliyuncs.com/sources/posts/2013.11.14.what-is-economic-law--from-three-points/1400900959189152634.jpg" alt=""></p>
+<p>这里的需求曲线是指消费者对该特定生产者的产品之间的需求曲线，因为在完全竞争的市场中，生厂商的售价一旦高于边际收益，没有消费者会购买他的商品；另外因为此时MR=P=MC，没有厂商会亏本，以低于边际收益的价格销售商品。</p>
+<p><img src="http://xeworld.oss-cn-hangzhou.aliyuncs.com/sources/posts/2013.11.14.what-is-economic-law--from-three-points/1954562238379089112.jpg" alt=""></p>
+<p>对于垄断企业而言，他是价格的制定者，而非接受者，所以其产品的需求曲线和市场的需求曲线一致，是向下倾斜的。</p>
+<p><img src="http://xeworld.oss-cn-hangzhou.aliyuncs.com/sources/posts/2013.11.14.what-is-economic-law--from-three-points/3849733256571996626.jpg" alt=""></p>
+<p>这里举了一个例子，具体分析对于一家垄断企业而言，消费者能够接受的价格的一直处于边际收益之上。</p>
+<p><img src="http://xeworld.oss-cn-hangzhou.aliyuncs.com/sources/posts/2013.11.14.what-is-economic-law--from-three-points/623467073432024005.jpg" alt=""></p>
+<p>前面说到，对于理智的企业而言，必然会选择边际收益等于边际成本的产量点，又因为垄断企业的边际收益永远在售价之下，同时边际成本线就是产品的供给曲线，所以P&gt;MR=MC。</p>
+<p><img src="http://xeworld.oss-cn-hangzhou.aliyuncs.com/sources/posts/2013.11.14.what-is-economic-law--from-three-points/3106076368020006715.jpg" alt=""></p>
+<p>ATC是指平均成本，平均成本是平均固定成本加上边际成本的值，作为盈利的垄断企业，P&gt;ATC&gt;MR=MC，利润就如上式。</p>
+<p><img src="http://xeworld.oss-cn-hangzhou.aliyuncs.com/sources/posts/2013.11.14.what-is-economic-law--from-three-points/1873778920063124327.jpg" alt=""></p>
+<p>在竞争市场的情形下，原先应当在Qc的产量下均衡，但是由于垄断的存在，产量在垄断企业自身的MR=MC点就停止下来，市场产量也就停止在了Qm。相对于原先的产量，产量的减少就产生了无谓损失。要解决无谓损失，我觉得较为有效的一个方法是价格歧视（区别定价），如航班即将起飞时的低价票。</p>
+<p>这里又提出一个问题，垄断情形的供需曲线图与税收对供需曲线的影响，在产生无谓损失时是一致的。那么为什么我们能够收税，但是不允许垄断？这似乎是一个浅显易见的道理，公益权衡的结果，我们也未能找出新的理由支撑。</p>
+<p>从上述几个例子中可以看到，经济法制定规则的背后有着金融学理论的支撑，目的是为了经济运行更为有效。但是现在的经济法在具体制度中，并不仅仅以经济运行为唯一目标，背后依旧有民生的因素。那么在最后，提出一个问题，在最开始的那些法律中，究竟哪些应当划入经济法，哪些不应划入经济法？</p>
+<p><img src="http://xeworld.oss-cn-hangzhou.aliyuncs.com/sources/posts/2013.11.14.what-is-economic-law--from-three-points/3005871276393452163.jpg" alt=""></p>
+<p>我们认为，经济法区别与传统民商法，其独特性不在于能够以经济学来解释规则本身，而在于考量问题的出发点更多的偏向于经济效益选择。诚如老师所言，经济学能够解释几乎所有的法律，但是能够解释不代表我们以经济学为制定依据。但是经济法本身我们认为其法条背后是应当由这样的基础的，需要考虑经济学因素后再予以规定。</p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;大家好，今天要和大家谈一个范围比较大的问题，就是经济法到底是什么，或者说，经济法是干什么的？这是一个很大的话题，其中可能包含一些乍一看很荒谬的问题。&lt;/p&gt;
+&lt;h1 id=&quot;法律篇&quot;&gt;1. 法律篇&lt;/h1&gt;&lt;p&gt;经济法是不是有关经济的法律，或者说调整经济活动中所有法律关系的相关法律制度的总和？大家先看一下一本普通的法学院《经济法》教材和CPA考试教材《经济法》中，对经济法是如何分章的：&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;http://xeworld.oss-cn-hangzhou.aliyuncs.com/sources/posts/2013.11.14.what-is-economic-law--from-three-points/3005871276393452163.jpg&quot; alt=&quot;&quot;&gt;&lt;/p&gt;
+&lt;p&gt;那么我们法学为何要将这些经济活动中一部分的法律单独划出来，作为经济法的研究对象？这个现有的法律划分是否准确？为何需要有经济法存在？&lt;/p&gt;
+&lt;p&gt;因此可以开始讨论这个最重要的话题了，经济法的本质宗旨是什么？&lt;/p&gt;
+    
+    </summary>
+    
+      <category term="杂谈" scheme="http://xeworld.com/categories/%E6%9D%82%E8%B0%88/"/>
+    
+    
+      <category term="经济法" scheme="http://xeworld.com/tags/%E7%BB%8F%E6%B5%8E%E6%B3%95/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>证明力与证据能力</title>
+    <link href="http://xeworld.com/post/weight-of-evidence/"/>
+    <id>http://xeworld.com/post/weight-of-evidence/</id>
+    <published>2013-10-10T09:40:04.000Z</published>
+    <updated>2017-04-10T07:13:38.524Z</updated>
+    
+    <content type="html"><![CDATA[<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/hint.css/2.4.1/hint.min.css"><p>本文大致行文思路为，首先介绍两者概念与内涵，及其纵横双向的发展脉络与各国对比，最后探讨两者内部的相互牵连关系。文章大致参照理解了他人的文章，有错误之处还望指正。</p>
+<p>先来看证明力，证据的证明力，指证据事实对案件事实是否有证明作用和作用的程度，又称之为证据价值。</p>
+<a id="more"></a>
+<h1 id="证明力的发展脉络">1. 证明力的发展脉络</h1><p>证明力的发展脉络可以用下图来表示： <img src="http://xeworld.oss-cn-hangzhou.aliyuncs.com/sources/posts/2013.10.10.weight-of-evidence/clip_image001.png" alt=""></p>
+<p>可以看到，证据的证明力经历了三个阶段。在最早期的神示证据时期，因为认知水平的落后，许多事实无从查证，为了能够解决纠纷裁判，法官只能求助与万能的神。比如有“沉水审判”，将被审判者投入水中，如果能够下沉则说明其无罪，反之则有罪。与此类似的还有中国古代神兽谛听的传说。在神示证据时期，被审判者有罪与否基本是听天由命的状态，但是法官在一定程度上也有裁量空间。比如沉水审判中，如果法官认为罪犯清白，可以往其身上绑几块石头，帮助其下沉，但是这样的自由裁量空间还是非常有限的。总体而言，与其说法官是裁判者，不如说只是仪式的主持人。</p>
+<p>随着认知水平的逐渐发展，人们发现神示证据不太靠谱，加上中央集权下对审判权的控制，证明力进入了法定证据的阶段。在这个阶段，法律直接规定了证据链，由哪些证据可以得出何种结论。在这个阶段，虽然事实由证据认定，摆脱了不靠谱的神，但是法官在事实判断上的自由心证依旧不自由，只要有证据，便可依照法定的证据链，得出认定事实的结论。</p>
+<p>在这里需要考虑一个问题，即证据链是否需要由法律来规定？人们逐渐发现，什么证据能证明什么内容，哪些证据可以构成证据链共同证明事实，法律无法穷尽其规定，另外，口供作为普遍的强势证据导致了刑讯逼供的滥用，同时，作为一个具有健全理智的成年人，应当具有类似的逻辑判断力，即从现有证据归纳出事实的能力，由此进入了自由心证阶段。英美法系的陪审团，就发挥着作为理智健全人判断事实的作用。但是如果将所有的证据都让陪审团进行判断，不利于陪审团工作的进行，某些证据容易产生多个争执点，混淆主要争议，偏离事实认定的重心，因此需要法官首先对陪审团能看到的证据进行预筛选。这个筛选过程需要遵循一定的原则，这些原则逐渐发展成为了证据规则。比如传闻证据规则与最佳证据规则，就是两条著名的证据规则。与之相对的是大陆法系，大陆法系即使引入了陪审团制度，也与英美法系有区别。大陆法系的陪审团与法官并非独立分开行使职能，而是相互辅助，故可以在审判过程中对证据进行认定，不需要预先的筛选。</p>
+<p>在证明力的演变过程中，法官的自由心证不断扩大，现今在证据规则至上也能进行一定的变通。比如传闻证据规则出现了一些例外，最佳证据规则中二手证据在满足一定条件的情况下也能被采纳。</p>
+<h1 id="证据能力的发展脉络">2. 证据能力的发展脉络</h1><p>再来看证据能力，证据能力是指事实材料成为诉讼中的证据所必须具备的条件，及法律对事实材料成为诉讼中的证据在资格上的限制。因此，证据能力也称之为证据资格，或证据的适格性。</p>
+<p>与证明力的发展脉络不同，证据能力直至陪审团制度的出现才跃入人们的视野。因为在证据能力是对何种证据能够作为证据进行规定，而神示证据没有这样的必要。 <img src="http://xeworld.oss-cn-hangzhou.aliyuncs.com/sources/posts/2013.10.10.weight-of-evidence/clip_image002.png" alt=""></p>
+<p>总体而言，证据能力就是从无到有、由紧及松发展。其中英美法系国家，由于证据规则的产生和发展与陪审团密切相关，未免陪审团因部分不法证据陷入感情与同情之偏见，需要法官对证据按照一定标准进行示明，由此发展出了一整套证据规则。但是在大陆法系国家，因为大陆法系更加重视法官的作用，法官亦是受过专业训练的人员，因此不担心法官收到非法证据的误导，从而大陆法系很少对证据能力进行限制。随着国际交流的加强，两种模式相互交融，各取所长，逐渐向中性发展，英美法系陪审团制度的使用比例逐渐缩小，而大陆法系将陪审团引入改造为类似参审模式。</p>
+<h1 id="证明力与证据能力的关系">3. 证明力与证据能力的关系</h1><p><img src="http://xeworld.oss-cn-hangzhou.aliyuncs.com/sources/posts/2013.10.10.weight-of-evidence/clip_image003.png" alt=""></p>
+<p>我国法律中证据有三性，合法性、真实性与关联性。其中真实性与关联性是我国法律特别关注的内容，代表了证据的自然基础，是证明力的概念范畴。而相对较为忽略的合法性内容，是证据的法律基础，这一部分则更贴近证据能力的范畴。与之不同的是，英美法系似乎将真实性归入证据能力的范畴。对此我存有疑惑，对这样的归类自己也不敢肯定。比如我们说，传闻证据排除，是因为传闻证据很可能是虚假的，那么这是真实性的内容，传闻证据排除规则则是证据规则，属于证据能力范畴，这在英美法系是说得通的。但是在大陆法系，我们有传闻证据证明力弱于原始证据，这是对证明力强弱的表述，是否就代表我国就将真实性纳入证明力范畴了呢？</p>
+<p>关于证明力与证据能力，有一个争论，类似先有鸡还是先有蛋的争论。一个证据，是否以其具有证据能力为前提，也就是说，如果一个证据不符合证据能力，即不具有证据资格，自然无从谈论其证明力问题。这是我国大多数学者的通说。也就是说，通说认为证据能力是证明力的前提。但是我们说，在自由心证下对证据的审核，不是一板一眼的，而是灵活机变的。倘若因某个证据不具有证据能力，就一味不再研究其证明力与证明对象，那么是否又回到了呆板的绝对的证据规则上了，某些例外下的证据如何进行审查，另外庭审中如何发挥法官的作用，多个非法、弱势的证据是否能够推翻强力证据？特别是在民事活动中这样的探讨是否有必要？</p>
+<h1 id="证据能力对证明力的限制">4. 证据能力对证明力的限制</h1><p><img src="http://xeworld.oss-cn-hangzhou.aliyuncs.com/sources/posts/2013.10.10.weight-of-evidence/clip_image004.png" alt=""></p>
+<p>这部分内容其实已经在之前讲了蛮多，积极性限制是作为证据的前提条件，消极性限制是作为证据的否定要件。以最佳证据规则为例，其要求提供原件。这里的原件在英美法系指的是文书、记录或者照片。也如这样表述更为适当：“除非不可能，否则都应出示文书本身”。那么与案件有关的实物是否纳入最佳证据规则？至少英美法系并不包含，而在大陆法系，法官应当根据最佳证据规则背后的政策法理进行衡量，中国则是肯定了实物证据适用最佳证据规则。最佳证据规一般有几个例外：当事人无异议、原件损毁、原件在对方手中、原件在第三人手中、官方记录、其他。如广泛传播的字帖、无法移动的墙、原件损毁由举证方故意行为是例外的例外。</p>
+<p>以刑事审判为例 <img src="http://xeworld.oss-cn-hangzhou.aliyuncs.com/sources/posts/2013.10.10.weight-of-evidence/clip_image005.png" alt=""></p>
+]]></content>
+    
+    <summary type="html">
+    
+      &lt;p&gt;本文大致行文思路为，首先介绍两者概念与内涵，及其纵横双向的发展脉络与各国对比，最后探讨两者内部的相互牵连关系。文章大致参照理解了他人的文章，有错误之处还望指正。&lt;/p&gt;
+&lt;p&gt;先来看证明力，证据的证明力，指证据事实对案件事实是否有证明作用和作用的程度，又称之为证据价值。&lt;/p&gt;
+    
+    </summary>
+    
+      <category term="杂谈" scheme="http://xeworld.com/categories/%E6%9D%82%E8%B0%88/"/>
+    
+    
+      <category term="证据" scheme="http://xeworld.com/tags/%E8%AF%81%E6%8D%AE/"/>
+    
+  </entry>
+  
+  <entry>
+    <title>“多数人暴政”成因及对策新论</title>
+    <link href="http://xeworld.com/post/the-reason-of-tyranny-of-majority/"/>
+    <id>http://xeworld.com/post/the-reason-of-tyranny-of-majority/</id>
+    <published>2012-12-18T09:54:52.000Z</published>
+    <updated>2017-04-10T01:00:27.768Z</updated>
+    
+    <content type="html"><![CDATA[<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/hint.css/2.4.1/hint.min.css"><hr>
+<p><strong>摘 要</strong>：民主是现代宪政的基石，解决了少数人对多数人实施暴政的问题。然依照“社会契约论”建立的民主体系，却不得不面对如何避免多数人对少数人实施暴政的课题，也即本文讨论的主题——多数人暴政。本文并非从公平、正义的应然、实然角度探讨这个命题，而从法的社会性及人的社会性角度，更多参考经济学上的理性人假设，从不同角度分析该命题的成因，并提出相应对策。</p>
+<hr>
+<p>卢梭的《社会契约论》提出了民主政府能够成立的基础是人民的“公意”，也正是这个“公意”，引发了众多学者的不断思考。何为“公意”，“公意”是否就和法律所最终追求的公平与正义等同？苏格拉底之死，成为实践民主道路上不得不面临的一个问题，究竟如何才能避免“多数人暴政”的发生？</p>
+<a id="more"></a>
+<h1 id="现有理论对“多数人暴政”的成因分析">1. 现有理论对“多数人暴政”的成因分析</h1><p>现有理论在分析“多数人暴政”的成因时，沿用的逻辑思路大致是：</p>
+<h2 id="多数决的性质">1.1. 多数决的性质</h2><p>在《社会契约论》中，卢梭对社会公约概括如下：“我们每个人都以其自身及其全部的力量共同置于公意的最高指导之下，并且我们在共同体中接纳每一个成员作为全体之不可分割的一部分。”<sup id="fnref:1"><a href="#fn:1" rel="footnote"><span class="hint--top-right hint--error hint--large" aria-label="【法】卢梭：《社会契约论》，何兆武译，北京：商务印书馆出版社，2003年，第26页。">[1]</span></a></sup>对于多数决的性质，卢梭认为：“多数表决的规则，其本身就是一种约定的确立，并且假定至少是有过一次全体一致的同意”<sup id="fnref:2"><a href="#fn:2" rel="footnote"><span class="hint--top-right hint--error hint--large" aria-label=" 前注第22—23页。">[2]</span></a></sup></p>
+<p>事实上，即使是卢梭这样坚持全体决的学者，也不得不承认全体决在现实中具有不切实际性，而多数决则能同时保证效率和公平，因此多数决的结果对于少数人能够产生约束力的权力正当性得到了解释。</p>
+<h2 id="多数决与“公意”的公正性">1.2. 多数决与“公意”的公正性</h2><p>从卢梭上述对社会公约的解释可以看到，当这一原始的公约生效之时，公约成员间便形成了一个看不见的网。这张网将所有成员，无论之后对决议持何种态度，但凡是被多数决的机制通过的约定，均对网内全体成员产生约束力。</p>
+<p>这样一个共同体<sup id="fnref:3"><a href="#fn:3" rel="footnote"><span class="hint--top-right hint--error hint--large" aria-label=" 前注1。">[3]</span></a></sup>，拥有自己的意志，意志产生的机制就是多数决，而最终的表决结果被称为“公意”。公意必须从全体的利益出发, 才能做到对全体适用, 当它倾向于某个特定的目标时, 就失去了其天然的公正性。<sup id="fnref:4"><a href="#fn:4" rel="footnote"><span class="hint--top-right hint--error hint--large" aria-label=" 杜文丽：《论卢梭社会契约中的“公意”》，《学术交流》2007年第6期，第20页。">[4]</span></a></sup>因此卢梭对于多数决结果的正当性基础源于表决之时每个人的立足点在于共同体的利益，而非个人私利。</p>
+<h2 id="“多数人暴政”源于非“公意”的多数决">1.3. “多数人暴政”源于非“公意”的多数决</h2><p>正是这种理论上公正的表决机制，在现实中不得不面临投票者为了私利进行表决的困境，使得“多数人暴政”成为一个真实的命题。我们一方面不得不继续沿用多数决以求效率，另一方面又无法保证多数决的结果就是我们所追求的“公意”，矛盾由此显现。</p>
+<h1 id="“多数人暴政”始于私利表决">2. “多数人暴政”始于私利表决</h1><p>上面谈到，卢梭所追求的“公意”，需要建立在全体表决者以公共利益为考量的出发点上。关键点无非在于，成员表决不能出于私利，而“多数人暴政”则是违反了这种规则，私利表决便是“多数人暴政”的核心诱因。</p>
+<p>因此，我们有必要分析这种私利究竟源于何方，又与“人性”这一话题有何纠葛。</p>
+<h2 id="理性人与无意决">2.1. 理性人与无意决</h2><p>经济学所言“经济理性人”的假设，结合了亚当·斯密“经济人”假设与“理性人”假设，在经济学领域即为“在经济活动中，主体所追求的惟一目标是自身经济利益的最优化。”这个假设建立的基础就是人性中存在的“自利”与“理性”。</p>
+<p>本文并非提倡“自利”，也并未否认人作为复杂的社会动物，在自利与理性之外有许多其他的因素在影响个体的决策。只是我们需要认识到人的社会性，也需要认识到规则的社会性，社会性的产生，笔者认为是每个个体的个性结合。虽然现实生活中的个体决策并非只因人性本源要求决定，但是在进行思想实验之时，这种人性却是我们需要认真对待的内容。</p>
+<p>将“经济理性人”假设放置于社会契约论之下的“公意”表决之中，每个个体所追求的表决结果，均为自身利益的最优化。那么在一些表决事项中，必然出现“多数人暴政”的情形。</p>
+<p>以经济学所举的“公地悲剧”为例，如果将公共事务中的义务内容交由少数人承担，基于私利的出发点，不承担义务的人为了自身不需承担义务，必然会同意这一提案。退一步而言，即使不通过提案不会对自身造成不利影响，这一使他人承担义务的决策至少从心里上能够使多数人产生内心的满足感和优越感，通过提案也便成为预想之中的事。</p>
+<p>另一种情况是，无论是否通过提案都不会对自身产生影响，以苏格拉底为例，当时广场表决时，存在一个个体，不知道谁是苏格拉底，也不关心表决结果，那么他会如何表决呢？人性内在有随波逐流的特点，跟随多数人的态度成为趋利避害最方便也是成本最低的选择，也许是出于内心中对“法不责众”的信赖，在面对这类决策的时候，往往无关利害关系的个体会遵从多数人的意见。</p>
+<p>这两种情况所产生的决策，前者不是卢梭所追求的公正的“公意”，后者甚至根本连个体意志都不一定存在。此种因素所产生的决策结果，我认为属于“无意决”，多数也仅仅是个数量的标准，无约束全体的“公意”存在。</p>
+<h2 id="信息不对称与多数决">2.2. 信息不对称与多数决</h2><p>信息不对称也是经济学中的理论，是指一些成员拥有其他成员无法拥有的信息，产生交易关系和契约安排的不公平或者市场效率降低问题。在政权组织形式方面，一般用于解决直接民主与间接民主的问题。因为表决群体数量庞大，在直接民主的情形下，必定有相当数量的表决者并不了解表决事项的全部相关情形，也必定有相当数量的表决者并无知悉全部内容的意愿。为了避免在信息不对称情形下表决结果的畸形，间接民主的确立有其必要性和正当性。</p>
+<p>同样在多数决的情形下，对于部分的表决事项，依然有人并不知悉全部的情形，每个表决者的信息量有所区别。此时拥有最多信息的表决者如果内心对于表决结果有偏好，那么在介绍之时便会有倾向的或者无意识的忽略不利于表决结果的事项。信息量不足的表决者在有选择的信息面前丧失了自我判断的信息基础，由此得出的个体意志其实已被其他表决者的意志所同化。也就意味着，其实最终得出的形式上的“多数决”，其实是在少数人的引导下得出的意志，这样的决策当然也不能被认为是“公意”。</p>
+<h1 id="现实解决“多数人暴政”问题的途径">3. 现实解决“多数人暴政”问题的途径</h1><p>有学者认为，“多数人暴政”是一个无法解决的问题，如莱斯诺夫在他的《社会契约论》中这样写道：“事实上，从来没有什么办法（虽然不乏勇敢的尝试）能够成功地将多数人的暴政彻底消除。”<sup id="fnref:5"><a href="#fn:5" rel="footnote"><span class="hint--top-right hint--error hint--large" aria-label=" 【英】迈克尔·莱斯诺夫等：《社会契约论》，刘训练、李丽红、张红梅译，南京：江苏人民出版社，2005年，第115页。转引自前注4，第22页。
+">[5]</span></a></sup>但是这仅是在论证彻底根除“多数人暴政”在理论上不可行，并非否认做出这样努力的现实必要性与其价值。</p>
+<p>结合上述对“多数人暴政”成因的分析，笔者大致在此提出几种设想，以求为解决这一问题提供一定思路。</p>
+<h2 id="限制多数决适用的范围">3.1. 限制多数决适用的范围</h2><p>前述谈到多数决产生归于人性中的私利，当一项提案明显附加少数人义务时，通过这项提案便成为意料中事。因此在采用多数决表决，以求得出“公意”之时，需要先行判断该项表决事项是否施加少数人以不正当、不公正的义务。</p>
+<p>我们将表决的事项分为程序性事项和实体性事项，那么是否能够以此为划分基础来判断多数决的适用范围呢？我认为不能。因为程序性事项并非不涉及实体利益的划分，比如举证责任的分配，很大程度上直接决定了实体权利的归属，而部分的实体性事项，涉及利益面极广，这种事项也明显只有通过多数决的方式进行表决。</p>
+<p>那么究竟多数决适用的范围是什么？我认为应当以排除法来判断。因为依照社会契约论，我们得出的多数决结果，能够被推定为“公意”，这种公意具有正当性，我们也需要多数决来保证这种正当性。当且仅当我们有理由相信多数决的结果并非“公意”时，我们才能否认这种表决结果的正当性。因此与其划分多数决的适用范围，不如建立以多数决为一般“公意”推知途径，特殊决为补充的表决方式。</p>
+<p>这里引申出两个问题。</p>
+<p>1. 如何判断不能用多数决表决的事项</p>
+<p>对于这个问题，似乎成为一个无法解决的问题。因为当多数人欲将不正当义务归结于少数人之上时，在表决该事项是否能以多数决方式进行时，多数人依旧会投票支持采用多数决方式进行。因此如果以多数决作为判断这一标准的依据时，本身就已经丧失了理论基础与现实必要。但是如果不采用多数决的方式，又应当如何判断呢？无论是当权的少数人来判断，还是随机选择一部分人来判断，似乎都有其弊端，难以得到一个公正的判断。</p>
+<p>在此笔者提出一个设想，依旧采用多数决的方式进行，但是表决的内容并非目的事项能否可以采用多数决进行表决，而是表决不涉及实体关系的程序内容，即在矛盾显现之前，先行决策分类事项，即将可能需要的表决种类进行划分，对每一类采用一致的表决手段。之于真是实体事项出现之时，便套用最初所“公意”表决的分类，来决定采用何种表决机制。</p>
+<p>2. 特殊决又该如何构架</p>
+<p>如果我们对某一事项放弃了多数决的形式，那么何种新的机制才能代表公正，才是“公意”？</p>
+<p>前述谈到信息不对称是引发“多数人暴政”的原因，要解决这一问题，无非两种途径，一是使所有表决者获得与最多信息量者相同的信息，二是仅允许无信息量者参与表决。从公平与正义的出发点，第二种途径对于公正的追求更为完美，且第一种途径在现实中很难实现，我们无法要求，也不能实现这样一种完全信息量的情形。英美法系的陪审团制度似乎是对这一理论很好的诠释，因此笔者认为从无知者中随机抽取一定人数参与表决的机制能够成为特殊情形下代替多数决可行的途径。</p>
+<p>在上述两个问题之外，以信息不对称为引，有时候并非所有群体都关心某一项事件的表决，表决内容实际仅对特定群体产生实体权利义务的影响，在这种情形下，有必要筛选参与表决的群体，以避免“无意者”随波逐流，无自身的意志，却对表决产生实质影响。</p>
+<h2 id="“无知之幕”在表决机制设计中的妙用">3.2. “无知之幕”在表决机制设计中的妙用</h2><p>约翰·罗尔斯在《正义论》中提出了“无知之幕”的理论，只有当参与决策者并不知晓这一决策对自身会产生何种影响时，决策的结果才能被认为是公正的。其实这一理论便是剔除了人内心的私利。</p>
+<p>现实中的人，存在私利，要保证“公意”的正当性，必须设计人们无法牟取私利的制度体系。也就是说，表决的事项虽然实际上分配了权利义务，但是参与表决者并不能知悉具体权利义务归属怎样影响自身。</p>
+<p>回归到实际生活中，“无知者”的表决似乎是现实唯一的，能够实现这一设想的途径。</p>
+<h1 id="结语">4. 结语</h1><p>人的私利，信息的不对称，是“多数人暴政”从人性上不可避免的根本成因，制度的建设，法制的健全，立足于社会现状，着眼于文化环境，归根结底，也是对法域内人性的规范。人性，容易被认识，却难以被扼制，我们能做的，仅是构建出一套合理的表决机制，将人性中的恶剔除于表决程序。</p>
+<p>制度构建始终是中策，如何建设社会环境，优化多数决的立场，以追求自由，实现卢梭构想中的王国，才是人类发展的上策。</p>
+<div id="footnotes"><hr><div id="footnotelist"><ol style="list-style: none; padding-left: 0; margin-left: 40px"><li id="fn:1"><span style="display: inline-block; vertical-align: top; padding-right: 10px; margin-left: -40px">1.</span><span style="display: inline-block; vertical-align: top; margin-left: 10px;">【法】卢梭：《社会契约论》，何兆武译，北京：商务印书馆出版社，2003年，第26页。<a href="#fnref:1" rev="footnote"> ↩</a></span></li><li id="fn:2"><span style="display: inline-block; vertical-align: top; padding-right: 10px; margin-left: -40px">2.</span><span style="display: inline-block; vertical-align: top; margin-left: 10px;">前注第22—23页。<a href="#fnref:2" rev="footnote"> ↩</a></span></li><li id="fn:3"><span style="display: inline-block; vertical-align: top; padding-right: 10px; margin-left: -40px">3.</span><span style="display: inline-block; vertical-align: top; margin-left: 10px;">前注1。<a href="#fnref:3" rev="footnote"> ↩</a></span></li><li id="fn:4"><span style="display: inline-block; vertical-align: top; padding-right: 10px; margin-left: -40px">4.</span><span style="display: inline-block; vertical-align: top; margin-left: 10px;">杜文丽：《论卢梭社会契约中的“公意”》，《学术交流》2007年第6期，第20页。<a href="#fnref:4" rev="footnote"> ↩</a></span></li><li id="fn:5"><span style="display: inline-block; vertical-align: top; padding-right: 10px; margin-left: -40px">5.</span><span style="display: inline-block; vertical-align: top; margin-left: 10px;">【英】迈克尔·莱斯诺夫等：《社会契约论》，刘训练、李丽红、张红梅译，南京：江苏人民出版社，2005年，第115页。转引自前注4，第22页。<a href="#fnref:5" rev="footnote"> ↩</a></span></li></ol></div></div>]]></content>
+    
+    <summary type="html">
+    
+      &lt;hr&gt;
+&lt;p&gt;&lt;strong&gt;摘 要&lt;/strong&gt;：民主是现代宪政的基石，解决了少数人对多数人实施暴政的问题。然依照“社会契约论”建立的民主体系，却不得不面对如何避免多数人对少数人实施暴政的课题，也即本文讨论的主题——多数人暴政。本文并非从公平、正义的应然、实然角度探讨这个命题，而从法的社会性及人的社会性角度，更多参考经济学上的理性人假设，从不同角度分析该命题的成因，并提出相应对策。&lt;/p&gt;
+&lt;hr&gt;
+&lt;p&gt;卢梭的《社会契约论》提出了民主政府能够成立的基础是人民的“公意”，也正是这个“公意”，引发了众多学者的不断思考。何为“公意”，“公意”是否就和法律所最终追求的公平与正义等同？苏格拉底之死，成为实践民主道路上不得不面临的一个问题，究竟如何才能避免“多数人暴政”的发生？&lt;/p&gt;
+    
+    </summary>
+    
+      <category term="杂谈" scheme="http://xeworld.com/categories/%E6%9D%82%E8%B0%88/"/>
+    
+    
+      <category term="多数人暴政" scheme="http://xeworld.com/tags/%E5%A4%9A%E6%95%B0%E4%BA%BA%E6%9A%B4%E6%94%BF/"/>
+    
+  </entry>
+  
+</feed>
