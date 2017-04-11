@@ -5,7 +5,7 @@
   <link href="/atom.xml" rel="self"/>
   
   <link href="http://xeworld.com/"/>
-  <updated>2017-04-10T07:13:42.593Z</updated>
+  <updated>2017-04-11T02:20:13.770Z</updated>
   <id>http://xeworld.com/</id>
   
   <author>
@@ -20,7 +20,7 @@
     <link href="http://xeworld.com/post/setup-shadowsocks-vpn/"/>
     <id>http://xeworld.com/post/setup-shadowsocks-vpn/</id>
     <published>2016-10-21T11:14:18.000Z</published>
-    <updated>2017-04-10T07:13:42.593Z</updated>
+    <updated>2017-04-11T02:20:13.770Z</updated>
     
     <content type="html"><![CDATA[<link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/hint.css/2.4.1/hint.min.css"><p>一直以来，我都对公有VPN服务器的安全性存有疑问。为了更好的科学上网，经过多次亲身实战，简要写了一篇攻略。</p>
 <h1 id="服务器选择"><a href="#服务器选择" class="headerlink" title="服务器选择"></a>服务器选择</h1><p>因为我使用电信网络为主，经过对比<a href="https://my.hostus.us/aff.php?aff=1584" target="_blank" rel="external">HostUS</a>、<a href="https://m.do.co/c/4a70cb2bd58c" target="_blank" rel="external">DigitalOcean</a>、<a href="http://www.ufovps.com/aff.php?aff=157" target="_blank" rel="external">UFOVPS</a>、<a href="https://www.aliyun.com/" target="_blank" rel="external">Aliyun HongKong</a>等多家云服务器供应商实测结果，线路上<a href="https://my.hostus.us/aff.php?aff=1584" target="_blank" rel="external">HostUS</a>属于半CN2线路，<a href="https://m.do.co/c/4a70cb2bd58c" target="_blank" rel="external">DigitalOcean</a>无CN2线路，而位于香港的<a href="http://www.ufovps.com/aff.php?aff=157" target="_blank" rel="external">UFOVPS</a>、<a href="https://www.aliyun.com/" target="_blank" rel="external">Aliyun HongKong</a>虽然号称与大陆地区是CN2直连，但鉴于VPN用于科学上网，香港的国际带宽昂贵，在访问时都从美国等地绕一圈，实际效果反而不如美国的VPS。</p>
